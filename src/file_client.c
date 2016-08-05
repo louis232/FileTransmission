@@ -2,12 +2,11 @@
 #include "stru_common.h"
 
 #define PORT 8888
-#define SERV_IP "127.0.0.1"
 
 int main(int argc, char *argv[])
 {
-	if(argc != 2)
-		err_quit("Usage: ./file_client filename");
+	if(argc != 3)
+		err_quit("Usage: ./file_client serv_ip filename");
 	int ret;
 	int sockfd;
 	struct sockaddr_in serv_addr;
@@ -19,14 +18,16 @@ int main(int argc, char *argv[])
 	bzero(&serv_addr, sizeof(serv_addr));
 	serv_addr.sin_family = AF_INET;
 	serv_addr.sin_port = htons(PORT);
-	inet_pton(AF_INET, SERV_IP, &serv_addr.sin_addr);
+	ret = inet_pton(AF_INET, argv[1], &serv_addr.sin_addr);
+    if(ret != 1)
+        err_quit("invalid ip address");
 
 	ret = connect(sockfd, (struct sockaddr*)&serv_addr, sizeof(serv_addr));
 	if(ret != 0)
 		err_sys("connect fail");
 
 	FILE *fp;
-	fp = fopen(argv[1], "r");
+	fp = fopen(argv[2], "r");
 	if(fp == NULL)
 		err_sys("fopen error");
 
