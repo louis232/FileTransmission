@@ -6,7 +6,7 @@
 int main(int argc, char *argv[])
 {
 	if(argc != 3)
-		err_quit("Usage: ./file_client serv_ip filename");
+		err_quit("Usage: ./file_client serv_name filename");
 	int ret;
 	int sockfd;
 	struct sockaddr_in serv_addr;
@@ -18,9 +18,18 @@ int main(int argc, char *argv[])
 	bzero(&serv_addr, sizeof(serv_addr));
 	serv_addr.sin_family = AF_INET;
 	serv_addr.sin_port = htons(PORT);
-	ret = inet_pton(AF_INET, argv[1], &serv_addr.sin_addr);
-    if(ret != 1)
-        err_quit("invalid ip address");
+
+    struct hostent *serv;
+    serv = gethostbyname(argv[1]);
+    if(serv == NULL)
+        err_sys("gethostbyname error");
+    char servip[32] = {0};
+    inet_ntop(serv->h_addrtype, *(serv->h_addr_list), servip, sizeof(servip));
+    printf("server ip:%s\n", servip);
+    serv_addr.sin_addr.s_addr = *(in_addr_t*)(serv->h_addr_list[0]);
+	//ret = inet_pton(AF_INET, argv[1], &serv_addr.sin_addr);
+    //if(ret != 1)
+      //  err_quit("invalid ip address");
 
 	ret = connect(sockfd, (struct sockaddr*)&serv_addr, sizeof(serv_addr));
 	if(ret != 0)
@@ -31,7 +40,7 @@ int main(int argc, char *argv[])
 	if(fp == NULL)
 		err_sys("fopen error");
 
-	char buffer[512];
+	char buffer[2048];
 	int n;
 
 	fd_set fds;
@@ -42,7 +51,7 @@ int main(int argc, char *argv[])
 		select(sockfd + 1, NULL, &fds, NULL, NULL);
 		if(FD_ISSET(sockfd, &fds))
 		{
-			n = fread(buffer, 1, 512, fp);
+			n = fread(buffer, 1, sizeof(buffer), fp);
 			if(n == 0)
 				break;
 			else
